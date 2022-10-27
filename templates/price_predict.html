@@ -1,0 +1,268 @@
+{% extends "layout.html" %}
+
+{% block content %}
+<script src="../static/js/jquery.min.js" type="text/javascript" charset='utf-8'></script>
+<script src="https://cdn.bootcss.com/echarts/4.4.0-rc.1/echarts.js" charset='utf-8'></script>
+
+<script type="text/javascript">
+
+    // 初始化界面
+    $(function () {
+        $('#li_0').attr('class', '');
+        $('#li_1_0').attr('class', 'active');
+        $('#li_1').attr('class', '');
+        $('#li_2').attr('class', '');
+        $('#li_3').attr('class', 'active');
+
+
+        // 使用 HTTP GET 请求从服务器加载数据
+        // 获取所有省的农产品并设置radio选项
+        $.get('http://127.0.0.1:5000/get_all_products_shengs', {},
+            function (data) {
+                pro_ratio1 = ''
+                for (var i = 0; i < data['products'].length; i++) {
+                    if (i == 0) {
+                        // 设置radio的value和name
+                        pro_ratio1 += '<label style="margin-left:5px;"><input type="radio" name="product_name" checked value="' + data['products'][i] + '">' + data['products'][i] + '</label>'
+                    } else {
+                        // 设置radio的value和name
+                        pro_ratio1 += '<label style="margin-left:5px;"><input type="radio" name="product_name" value="' + data['products'][i] + '">' + data['products'][i] + '</label>'
+                    }
+                }
+                $('#product_ratio').append(pro_ratio1)  // 将radio添加到规定的div中
+
+                var product_name = $("input[name='product_name']:checked").val()
+
+            $.get('http://127.0.0.1:5000/predict_product_price/' + product_name, {},
+                function (data) {
+                    // 基于准备好的dom，初始化echarts实例
+                    var dom = document.getElementById("main");  // 获取main（div）对象
+                    var myChart = echarts.init(dom);
+
+                    // 获取预测数据
+                    var add_predict = [];
+                    for (var i = 0; i < data['add_predict'].length; i++) {
+                        add_predict.push(data['add_predict'][i].toFixed(4))  // tofixed()保留小数后几位
+                    }
+
+                    // 获取真实数据
+                    var true_price = []
+                    for (var i = 0; i < data['all_data'].length; i++) {
+                        true_price.push(data['all_data'][i].toFixed(4))     // tofixed()保留小数后几位
+                    }
+
+                    var option = {
+                        tooltip: {
+                            trigger: 'axis',
+                            position: function (pt) {
+                                return [pt[0], '10%'];
+                            }
+                        },
+                        title: {
+                            left: 'center',
+                            text: product_name + '平均价格预测结果（绿色为实际价格，红色为预测价格），预测绝对误差' + data['error'].toFixed(4),
+                        },
+                        toolbox: {
+                            feature: {
+                                dataZoom: {
+                                    yAxisIndex: 'none'
+                                },
+                                restore: {},
+                                saveAsImage: {}
+                            }
+                        },
+                        xAxis: {
+                            type: 'category',
+                            boundaryGap: false,
+                            data: data['all_time']
+                        },
+                        yAxis: {
+                            type: 'value',
+                            scale: true,
+                            min: 'dataMin'
+                        },
+                        dataZoom: [{
+                            type: 'inside',
+                            start: 0,
+                            end: 100
+                        }, {
+                            start: 0,
+                            end: 100,
+                            handleIcon: 'M10.7,11.9v-1.3H9.3v1.3c-4.9,0.3-8.8,4.4-8.8,9.4c0,5,3.9,9.1,8.8,9.4v1.3h1.3v-1.3c4.9-0.3,8.8-4.4,8.8-9.4C19.5,16.3,15.6,12.2,10.7,11.9z M13.3,24.4H6.7V23h6.6V24.4z M13.3,19.6H6.7v-1.4h6.6V19.6z',
+                            handleSize: '80%',
+                            handleStyle: {
+                                color: '#fff',
+                                shadowBlur: 3,
+                                shadowColor: 'rgba(0, 0, 0, 0.6)',
+                                shadowOffsetX: 2,
+                                shadowOffsetY: 2
+                            }
+                        }],
+                        series: [
+                            {
+                                name: '预测价格',
+                                type: 'line',
+                                smooth: true,
+                                symbol: 'none',
+                                lineStyle: {
+                                    width: 4
+                                },
+                                sampling: 'average',
+                                itemStyle: {
+                                    color: '#fe6673'
+                                },
+                                data: add_predict
+                            },
+                            {
+                                name: '实际价格',
+                                type: 'line',
+                                smooth: true,
+                                symbol: 'none',
+                                lineStyle: {
+                                    width: 4
+                                },
+                                sampling: 'average',
+                                itemStyle: {
+                                    color: '#2ae0c8'
+                                },
+                                data: true_price
+                            }
+                        ]
+                    };
+                    if (option && typeof option === "object") {
+                        myChart.setOption(option, true);
+                    }
+
+                }
+            );
+            }
+        );
+
+        // 分析按钮点击事件
+        $('#submit').click(function (args) {
+            var product_name = $("input[name='product_name']:checked").val()
+
+            $.get('http://127.0.0.1:5000/predict_product_price/' + product_name, {},
+                function (data) {
+                    // 基于准备好的dom，初始化echarts实例
+                    var dom = document.getElementById("main");  // 获取main（div）对象
+                    var myChart = echarts.init(dom);
+
+                    // 获取预测数据
+                    var add_predict = [];
+                    for (var i = 0; i < data['add_predict'].length; i++) {
+                        add_predict.push(data['add_predict'][i].toFixed(4))  // tofixed()保留小数后几位
+                    }
+
+                    // 获取真实数据
+                    var true_price = []
+                    for (var i = 0; i < data['all_data'].length; i++) {
+                        true_price.push(data['all_data'][i].toFixed(4))     // tofixed()保留小数后几位
+                    }
+
+                    var option = {
+                        tooltip: {
+                            trigger: 'axis',
+                            position: function (pt) {
+                                return [pt[0], '10%'];
+                            }
+                        },
+                        title: {
+                            left: 'center',
+                            text: product_name + '平均价格预测结果（绿色为实际价格，红色为预测价格），预测绝对误差' + data['error'].toFixed(4),
+                        },
+                        toolbox: {
+                            feature: {
+                                dataZoom: {
+                                    yAxisIndex: 'none'
+                                },
+                                restore: {},
+                                saveAsImage: {}
+                            }
+                        },
+                        xAxis: {
+                            type: 'category',
+                            boundaryGap: false,
+                            data: data['all_time']
+                        },
+                        yAxis: {
+                            type: 'value',
+                            scale: true,
+                            min: 'dataMin'
+                        },
+                        dataZoom: [{
+                            type: 'inside',
+                            start: 0,
+                            end: 100
+                        }, {
+                            start: 0,
+                            end: 100,
+                            handleIcon: 'M10.7,11.9v-1.3H9.3v1.3c-4.9,0.3-8.8,4.4-8.8,9.4c0,5,3.9,9.1,8.8,9.4v1.3h1.3v-1.3c4.9-0.3,8.8-4.4,8.8-9.4C19.5,16.3,15.6,12.2,10.7,11.9z M13.3,24.4H6.7V23h6.6V24.4z M13.3,19.6H6.7v-1.4h6.6V19.6z',
+                            handleSize: '80%',
+                            handleStyle: {
+                                color: '#fff',
+                                shadowBlur: 3,
+                                shadowColor: 'rgba(0, 0, 0, 0.6)',
+                                shadowOffsetX: 2,
+                                shadowOffsetY: 2
+                            }
+                        }],
+                        series: [
+                            {
+                                name: '预测价格',
+                                type: 'line',
+                                smooth: true,
+                                symbol: 'none',
+                                lineStyle: {
+                                    width: 4
+                                },
+                                sampling: 'average',
+                                itemStyle: {
+                                    color: '#fe6673'
+                                },
+                                data: add_predict
+                            },
+                            {
+                                name: '实际价格',
+                                type: 'line',
+                                smooth: true,
+                                symbol: 'none',
+                                lineStyle: {
+                                    width: 4
+                                },
+                                sampling: 'average',
+                                itemStyle: {
+                                    color: '#2ae0c8'
+                                },
+                                data: true_price
+                            }
+                        ]
+                    };
+                    if (option && typeof option === "object") {
+                        myChart.setOption(option, true);
+                    }
+
+                }
+            );
+        });
+
+    });
+</script>
+
+<div class="" style="margin-left: 100px;margin-right: 100px;">
+    <h3 class="page-header">基于ARIMA自回归模型的农产品预测</h3>
+    <div>
+        <p style="font-size: 18px;"><b>请选择带预测的农产品：</b>
+        <div class="radio" id="product_ratio" style="font-size: 18px;">
+
+        </div>
+        </p>
+    </div>
+    <button class="btn btn-info" id="submit">提交分析</button>
+</div>
+
+<div class="row placeholders" style="margin-top: 20px;">
+    <div class="col-xs-12 placeholder" style="height:500px;" id="main"></div>
+</div>
+
+{% endblock %}

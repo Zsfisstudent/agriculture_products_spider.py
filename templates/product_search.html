@@ -1,0 +1,377 @@
+{% extends "layout.html" %}
+
+{% block content %}
+<script src="../static/js/jquery.min.js" type="text/javascript" charset='utf-8'></script>
+<script src="../static/js/echarts.js" charset='utf-8'></script>
+<script src="../static/js/echarts-wordcloud.min.js" type="text/javascript" charset='utf-8'></script>
+<script type="text/javascript" src="https://cdn.jsdelivr.net/npm/echarts/dist/extension/dataTool.min.js"></script>
+
+<script type="text/javascript">
+    // 初始化界面
+    $(function () {
+        $('#li_0').attr('class', '');
+        $('#li_1_0').attr('class', '');
+        $('#li_1').attr('class', 'active');
+        $('#li_2').attr('class', '');
+        $('#li_3').attr('class', '');
+
+        // 判断是否登录
+        $.get('http://127.0.0.1:5000/check_login', {},
+            function (data) {
+                console.log(data);
+                if (data['login'] === false) {
+                    window.location.href = '/'
+                }
+                else {
+                    $('#show_login_reg').hide();
+                    $('#index_img').css('height', '95%');
+                }
+            }
+        );
+
+        $.get('http://127.0.0.1:5000/get_all_products_shengs', {},
+            function (data) {
+                pro_ratio = ''
+                for (var i = 0; i < data['products'].length; i++) {
+                    if (i == 0) {
+                        pro_ratio += '<label style="margin-left:5px;"><input type="radio" name="product_name" checked value="' + data['products'][i] + '">' + data['products'][i] + '</label>'
+                    } else {
+                        pro_ratio += '<label style="margin-left:5px;"><input type="radio" name="product_name" value="' + data['products'][i] + '">' + data['products'][i] + '</label>'
+                    }
+                }
+                $('#product_ratio').append(pro_ratio)
+
+                sheng_ratio = ''
+                for (var i = 0; i < data['shengs'].length; i++) {
+                    if (i == 0) {
+                        sheng_ratio += '<label style="margin-left:5px;"><input type="radio" name="sheng_name" checked value="' + data['shengs'][i] + '">' + data['shengs'][i] + '</label>'
+                    } else {
+                        sheng_ratio += '<label style="margin-left:5px;"><input type="radio" name="sheng_name" value="' + data['shengs'][i] + '">' + data['shengs'][i] + '</label>'
+                    }
+                }
+                $('#sheng_ratio').append(sheng_ratio)
+
+                var product_name = $("input[name='product_name']:checked").val()
+                var sheng_name = $("input[name='sheng_name']:checked").val()
+
+            $.get('http://127.0.0.1:5000/sheng_product_analysis/' + product_name + '/' + sheng_name, {},
+                function (data) {
+                    var dom = document.getElementById("main1");
+                    var myChart = echarts.init(dom);
+
+                    var option = {
+                        tooltip: {
+                            trigger: 'axis',
+                            position: function (pt) {
+                                return [pt[0], '10%'];
+                            }
+                        },
+                        title: {
+                            left: 'center',
+                            text: sheng_name + product_name + '(平均/最低/最高)价格变化折线图'
+                        },
+                        toolbox: {
+                            feature: {
+                                dataZoom: {
+                                    yAxisIndex: 'none'
+                                },
+                                restore: {},
+                                saveAsImage: {}
+                            }
+                        },
+                        xAxis: {
+                            type: 'category',
+                            boundaryGap: false,
+                            data: data['date']
+                        },
+                        yAxis: {
+                            type: 'value',
+                            boundaryGap: [0, '100%']
+                        },
+                        legend: {
+                            show: true,
+                            top: "6%" //与上方的距离 可百分比% 可像素px
+                        },
+                        dataZoom: [
+                            {
+                                type: 'inside',
+                                start: 0,
+                                end: 100
+                            },
+                            {
+                                start: 0,
+                                end: 100
+                            }
+                        ],
+                        series: [
+                            {
+                                name: '最低价格',
+                                type: 'line',
+                                symbol: 'none',
+                                sampling: 'lttb',
+                                itemStyle: {
+                                    color: 'rgb(200, 70, 131)'
+                                },
+
+                                data: data['date_low_price']
+                            },
+                            {
+                                name: '平均价格',
+                                type: 'line',
+                                symbol: 'none',
+                                sampling: 'lttb',
+                                itemStyle: {
+                                    color: 'rgb(155, 200, 31)'
+                                },
+
+                                data: data['date_mean_price']
+                            },
+                            {
+                                name: '最高价格',
+                                type: 'line',
+                                symbol: 'none',
+                                sampling: 'lttb',
+                                itemStyle: {
+                                    color: 'rgb(5, 70, 131)'
+                                },
+
+                                data: data['date_high_price']
+                            }
+                        ]
+                    };
+                    if (option && typeof option === "object") {
+                        myChart.setOption(option, true);
+                    }
+
+                    var dom = document.getElementById("main2");
+                    var myChart = echarts.init(dom);
+
+                    var box_data = echarts.dataTool.prepareBoxplotData(data['date_price_box']);
+
+                    option = {
+                        title: [
+                            {
+                                text: sheng_name + product_name + '价格分布箱型图',
+                                left: 'center',
+                            }
+                        ],
+                        tooltip: {
+                            trigger: 'item',
+                            axisPointer: {
+                                type: 'shadow'
+                            }
+                        },
+                        xAxis: {
+                            type: 'category',
+                            data: data['date'],
+                            boundaryGap: true,
+                            nameGap: 30,
+                            splitArea: {
+                                show: false
+                            },
+                            splitLine: {
+                                show: false
+                            },
+                            axisLabel: {
+                                interval: 0,
+                                rotate: 45
+                            },
+                        },
+                        yAxis: {
+                            type: 'value',
+                            name: '价格',
+                            splitArea: {
+                                show: true
+                            },
+                            scale: true
+                        },
+                        series: [
+                        {
+                                name: 'boxplot',
+                                type: 'boxplot',
+                                data: box_data.boxData
+                            }
+                        ]
+                    };
+
+                    if (option && typeof option === "object") {
+                        myChart.setOption(option, true);
+                    }
+                }
+            );
+            }
+        );
+
+        $('#submit').click(function (args) {
+            var product_name = $("input[name='product_name']:checked").val()
+            var sheng_name = $("input[name='sheng_name']:checked").val()
+
+            $.get('http://127.0.0.1:5000/sheng_product_analysis/' + product_name + '/' + sheng_name, {},
+                function (data) {
+                    var dom = document.getElementById("main1");
+                    var myChart = echarts.init(dom);
+
+                    var option = {
+                        tooltip: {
+                            trigger: 'axis',
+                            position: function (pt) {
+                                return [pt[0], '10%'];
+                            }
+                        },
+                        title: {
+                            left: 'center',
+                            text: sheng_name + product_name + '(平均/最低/最高)价格变化折线图'
+                        },
+                        toolbox: {
+                            feature: {
+                                dataZoom: {
+                                    yAxisIndex: 'none'
+                                },
+                                restore: {},
+                                saveAsImage: {}
+                            }
+                        },
+                        xAxis: {
+                            type: 'category',
+                            boundaryGap: false,
+                            data: data['date']
+                        },
+                        yAxis: {
+                            type: 'value',
+                            boundaryGap: [0, '100%']
+                        },
+                        legend: {
+                            show: true,
+                            top: "6%" //与上方的距离 可百分比% 可像素px
+                        },
+                        dataZoom: [
+                            {
+                                type: 'inside',
+                                start: 0,
+                                end: 100
+                            },
+                            {
+                                start: 0,
+                                end: 100
+                            }
+                        ],
+                        series: [
+                            {
+                                name: '最低价格',
+                                type: 'line',
+                                symbol: 'none',
+                                sampling: 'lttb',
+                                itemStyle: {
+                                    color: 'rgb(200, 70, 131)'
+                                },
+
+                                data: data['date_low_price']
+                            },
+                            {
+                                name: '平均价格',
+                                type: 'line',
+                                symbol: 'none',
+                                sampling: 'lttb',
+                                itemStyle: {
+                                    color: 'rgb(155, 200, 31)'
+                                },
+
+                                data: data['date_mean_price']
+                            },
+                            {
+                                name: '最高价格',
+                                type: 'line',
+                                symbol: 'none',
+                                sampling: 'lttb',
+                                itemStyle: {
+                                    color: 'rgb(5, 70, 131)'
+                                },
+
+                                data: data['date_high_price']
+                            }
+                        ]
+                    };
+                    if (option && typeof option === "object") {
+                        myChart.setOption(option, true);
+                    }
+
+                    var dom = document.getElementById("main2");
+                    var myChart = echarts.init(dom);
+
+                    var box_data = echarts.dataTool.prepareBoxplotData(data['date_price_box']);
+
+                    option = {
+                        title: [
+                            {
+                                text: sheng_name + product_name + '价格分布箱型图',
+                                left: 'center',
+                            }
+                        ],
+                        tooltip: {
+                            trigger: 'item',
+                            axisPointer: {
+                                type: 'shadow'
+                            }
+                        },
+                        xAxis: {
+                            type: 'category',
+                            data: data['date'],
+                            boundaryGap: true,
+                            nameGap: 30,
+                            splitArea: {
+                                show: false
+                            },
+                            splitLine: {
+                                show: false
+                            },
+                            axisLabel: {
+                                interval: 0,
+                                rotate: 45
+                            },
+                        },
+                        yAxis: {
+                            type: 'value',
+                            name: '价格',
+                            splitArea: {
+                                show: true
+                            },
+                            scale: true
+                        },
+                        series: [
+                        {
+                                name: 'boxplot',
+                                type: 'boxplot',
+                                data: box_data.boxData
+                            }
+                        ]
+                    };
+
+                    if (option && typeof option === "object") {
+                        myChart.setOption(option, true);
+                    }
+                }
+            );
+        });
+    });
+</script>
+
+<div class="" style="margin-left: 100px;margin-right: 100px;">
+    <h3 class="page-header">全国各地区不同农产品价格数据分析</h3>
+    <div>
+        <p style="font-size: 18px;"><b>请选择农产品：</b>
+        <div class="radio" id="product_ratio" style="font-size: 18px;">
+        </div>
+        </p>
+        <p style="font-size: 18px;"><b>请选择省份：</b>
+        <div class="radio" id="sheng_ratio" style="font-size: 18px;">
+        </div>
+        </p>
+    </div>
+    <button class="btn btn-info" id="submit">提交分析</button>
+</div>
+<div class="row placeholders" style="margin-top: 20px; margin-left: 20px;">
+    <div class="col-xs-6 placeholder" style="height:550px;" id="main1"></div>
+    <div class="col-xs-6 placeholder" style="height:550px;" id="main2"></div>
+</div>
+
+{% endblock %}

@@ -1,0 +1,542 @@
+{% extends "layout.html" %}
+
+{% block content %}
+<script src="../static/js/jquery.min.js" type="text/javascript" charset='utf-8'></script>
+<script src="../static/js/echarts.js" charset='utf-8'></script>
+<script src="../static/js/echarts-wordcloud.min.js" type="text/javascript" charset='utf-8'></script>
+<script type="text/javascript" src="https://cdn.jsdelivr.net/npm/echarts/dist/extension/dataTool.min.js"></script>
+
+<script type="text/javascript">
+    // 初始化界面
+    $(function () {
+        $('#li_0').attr('class', '');
+        $('#li_1_0').attr('class', 'active');
+        $('#li_1').attr('class', '');
+        $('#li_2').attr('class', 'active');
+        $('#li_3').attr('class', '');
+
+        // 判断是否登录
+        $.get('http://127.0.0.1:5000/check_login', {},
+            function (data) {
+                console.log(data);
+                if (data['login'] === false) {
+                    window.location.href = '/'
+                }
+                else {
+                    $('#show_login_reg').hide();
+                    $('#index_img').css('height', '95%');
+                }
+            }
+        );
+
+
+        $.get('http://127.0.0.1:5000/get_all_products_shengs', {},
+            function (data) {
+                pro_ratio1 = ''
+                for (var i = 0; i < data['products'].length; i++) {
+                    if (i == 0) {
+                        pro_ratio1 += '<label style="margin-left:5px;"><input type="radio" name="product_name1" checked value="' + data['products'][i] + '">' + data['products'][i] + '</label>'
+                    } else {
+                        pro_ratio1 += '<label style="margin-left:5px;"><input type="radio" name="product_name1" value="' + data['products'][i] + '">' + data['products'][i] + '</label>'
+                    }
+                }
+                pro_ratio2 = ''
+                for (var i = 0; i < data['products'].length; i++) {
+                    if (i == 0) {
+                        pro_ratio2 += '<label style="margin-left:5px;"><input type="radio" name="product_name2" checked value="' + data['products'][i] + '">' + data['products'][i] + '</label>'
+                    } else {
+                        pro_ratio2 += '<label style="margin-left:5px;"><input type="radio" name="product_name2" value="' + data['products'][i] + '">' + data['products'][i] + '</label>'
+                    }
+                }
+                $('#product_ratio1').append(pro_ratio1)
+                $('#product_ratio2').append(pro_ratio2)
+
+                var product_name1 = $("input[name='product_name1']:checked").val()
+                var product_name2 =  data['products'][1]
+
+            $.get('http://127.0.0.1:5000/product_compare_analysis/' + product_name1 + '/' + product_name2, {},
+                function (data) {
+                    var dom = document.getElementById("main1");
+                    var myChart = echarts.init(dom);
+
+                    var option = {
+                        title: {
+                            left: 'center',
+                            text: product_name1 + '与' + product_name2 + '的最低价格对比折线图'
+                        },
+                        legend: {
+                            show: true,
+                            top: "6%" //与上方的距离 可百分比% 可像素px
+                        },
+                        tooltip: {
+                            trigger: 'axis'
+                        },
+                        xAxis: {
+                            type: 'category',
+                            data: data['date']
+                        },
+                        yAxis: {
+                            type: 'value'
+                        },
+                        series: [
+                            {
+                                name: product_name1,
+                                type: 'line',
+                                data: data['date_low_price1'],
+                            },
+                            {
+                                name: product_name2,
+                                type: 'line',
+                                data: data['date_low_price2'],
+                            }
+                        ]
+                    };
+                    if (option && typeof option === "object") {
+                        myChart.setOption(option, true);
+                    }
+
+                    var dom = document.getElementById("main2");
+                    var myChart = echarts.init(dom);
+
+                    var option = {
+                        title: {
+                            left: 'center',
+                            text: product_name1 + '与' + product_name2 + '的平均价格对比折线图'
+                        },
+                        legend: {
+                            show: true,
+                            top: "6%" //与上方的距离 可百分比% 可像素px
+                        },
+                        tooltip: {
+                            trigger: 'axis'
+                        },
+                        xAxis: {
+                            type: 'category',
+                            data: data['date']
+                        },
+                        yAxis: {
+                            type: 'value'
+                        },
+                        series: [
+                            {
+                                name: product_name1,
+                                type: 'line',
+                                data: data['date_mean_price1'],
+                            },
+                            {
+                                name: product_name2,
+                                type: 'line',
+                                data: data['date_mean_price2'],
+                            }
+                        ]
+                    };
+                    if (option && typeof option === "object") {
+                        myChart.setOption(option, true);
+                    }
+
+                    var dom = document.getElementById("main3");
+                    var myChart = echarts.init(dom);
+
+                    var option = {
+                        title: {
+                            left: 'center',
+                            text: product_name1 + '与' + product_name2 + '的最高价格对比折线图'
+                        },
+                        legend: {
+                            show: true,
+                            top: "6%" //与上方的距离 可百分比% 可像素px
+                        },
+                        tooltip: {
+                            trigger: 'axis'
+                        },
+                        xAxis: {
+                            type: 'category',
+                            data: data['date']
+                        },
+                        yAxis: {
+                            type: 'value'
+                        },
+                        series: [
+                            {
+                                name: product_name1,
+                                type: 'line',
+                                data: data['date_high_price1'],
+                            },
+                            {
+                                name: product_name2,
+                                type: 'line',
+                                data: data['date_high_price2'],
+                            }
+                        ]
+                    };
+                    if (option && typeof option === "object") {
+                        myChart.setOption(option, true);
+                    }
+
+                    var dom = document.getElementById("main4");
+                    var myChart = echarts.init(dom);
+                    var series_data = [];
+                    for (var i = 0; i < data['product'].length; i++) {
+                        series_data.push({ value: data['sheng_counts'][i], name: data['product'][i] });
+                    }
+
+                    var option = {
+                        backgroundColor: '#F9F9F9',
+                        title: {
+                            left: 'center',
+                            text: product_name1 + '和'+product_name2+'价格数据所在省份数量对比饼状图',
+                        },
+                        tooltip: {
+                            trigger: 'item',
+                            formatter: '{a} <br/>{b} : {c} ({d}%)'
+                        },
+                        series: [
+                            {
+                                name: '省份数量',
+                                type: 'pie',
+                                radius: '60%',
+                                center: ['50%', '60%'],
+                                data: series_data,
+                                emphasis: {
+                                    itemStyle: {
+                                        shadowBlur: 10,
+                                        shadowOffsetX: 0,
+                                        shadowColor: 'rgba(0, 0, 0, 0.5)'
+                                    }
+                                }
+                            }
+                        ]
+                    };
+                    if (option && typeof option === "object") {
+                        myChart.setOption(option, true);
+                    }
+
+                    var dom = document.getElementById("main5");
+                    var myChart = echarts.init(dom);
+
+                    var box_data1 = echarts.dataTool.prepareBoxplotData(data['date_price_box1']);
+                    var box_data2 = echarts.dataTool.prepareBoxplotData(data['date_price_box2']);
+
+                    option = {
+                        title: [
+                            {
+                                text: product_name1 + '和'+product_name2+'价格分布箱型对比图',
+                                left: 'center',
+                            }
+                        ],
+                        tooltip: {
+                            trigger: 'item',
+                            axisPointer: {
+                                type: 'shadow'
+                            }
+                        },
+                        grid: {
+                        show:true,
+                        left: "3%",
+                        right: "1%",
+                    },
+                        legend: {
+                            show: true,
+                            top: "6%" //与上方的距离 可百分比% 可像素px
+                        },
+                        xAxis: {
+                            type: 'category',
+                            data: data['date'],
+                            axisLabel: {
+                                interval: 0,
+                                rotate: 45
+                            },
+                        },
+                        yAxis: {
+                            type: 'value',
+                            name: '价格',
+                            splitArea: {
+                                show: true
+                            },
+                            scale: true
+                        },
+                        series: [
+                        {
+                                name: product_name1,
+                                type: 'boxplot',
+                                data: box_data1.boxData
+                            },
+                            {
+                                name: product_name2,
+                                type: 'boxplot',
+                                data: box_data2.boxData
+                            }
+                        ]
+                    };
+
+                    if (option && typeof option === "object") {
+                        myChart.setOption(option, true);
+                    }
+                }
+            );
+            }
+        );
+
+        $('#submit').click(function (args) {
+            var product_name1 = $("input[name='product_name1']:checked").val()
+            var product_name2 = $("input[name='product_name2']:checked").val()
+
+            if(product_name1 === product_name2) {
+                alert('不能选择同一种农产品进行对比！');
+                return
+            }
+
+            $.get('http://127.0.0.1:5000/product_compare_analysis/' + product_name1 + '/' + product_name2, {},
+                function (data) {
+                    var dom = document.getElementById("main1");
+                    var myChart = echarts.init(dom);
+
+                    var option = {
+                        title: {
+                            left: 'center',
+                            text: product_name1 + '与' + product_name2 + '的最低价格对比折线图'
+                        },
+                        legend: {
+                            show: true,
+                            top: "6%" //与上方的距离 可百分比% 可像素px
+                        },
+                        tooltip: {
+                            trigger: 'axis'
+                        },
+                        xAxis: {
+                            type: 'category',
+                            data: data['date']
+                        },
+                        yAxis: {
+                            type: 'value'
+                        },
+                        series: [
+                            {
+                                name: product_name1,
+                                type: 'line',
+                                data: data['date_low_price1'],
+                            },
+                            {
+                                name: product_name2,
+                                type: 'line',
+                                data: data['date_low_price2'],
+                            }
+                        ]
+                    };
+                    if (option && typeof option === "object") {
+                        myChart.setOption(option, true);
+                    }
+
+                    var dom = document.getElementById("main2");
+                    var myChart = echarts.init(dom);
+
+                    var option = {
+                        title: {
+                            left: 'center',
+                            text: product_name1 + '与' + product_name2 + '的平均价格对比折线图'
+                        },
+                        legend: {
+                            show: true,
+                            top: "6%" //与上方的距离 可百分比% 可像素px
+                        },
+                        tooltip: {
+                            trigger: 'axis'
+                        },
+                        xAxis: {
+                            type: 'category',
+                            data: data['date']
+                        },
+                        yAxis: {
+                            type: 'value'
+                        },
+                        series: [
+                            {
+                                name: product_name1,
+                                type: 'line',
+                                data: data['date_mean_price1'],
+                            },
+                            {
+                                name: product_name2,
+                                type: 'line',
+                                data: data['date_mean_price2'],
+                            }
+                        ]
+                    };
+                    if (option && typeof option === "object") {
+                        myChart.setOption(option, true);
+                    }
+
+                    var dom = document.getElementById("main3");
+                    var myChart = echarts.init(dom);
+
+                    var option = {
+                        title: {
+                            left: 'center',
+                            text: product_name1 + '与' + product_name2 + '的最高价格对比折线图'
+                        },
+                        legend: {
+                            show: true,
+                            top: "6%" //与上方的距离 可百分比% 可像素px
+                        },
+                        tooltip: {
+                            trigger: 'axis'
+                        },
+                        xAxis: {
+                            type: 'category',
+                            data: data['date']
+                        },
+                        yAxis: {
+                            type: 'value'
+                        },
+                        series: [
+                            {
+                                name: product_name1,
+                                type: 'line',
+                                data: data['date_high_price1'],
+                            },
+                            {
+                                name: product_name2,
+                                type: 'line',
+                                data: data['date_high_price2'],
+                            }
+                        ]
+                    };
+                    if (option && typeof option === "object") {
+                        myChart.setOption(option, true);
+                    }
+                    
+                    var dom = document.getElementById("main4");
+                    var myChart = echarts.init(dom);
+                    var series_data = [];
+                    for (var i = 0; i < data['product'].length; i++) {
+                        series_data.push({ value: data['sheng_counts'][i], name: data['product'][i] });
+                    }
+
+                    var option = {
+                        backgroundColor: '#F9F9F9',
+                        title: {
+                            left: 'center',
+                            text: product_name1 + '和'+product_name2+'价格数据所在省份数量对比饼状图',
+                        },
+                        tooltip: {
+                            trigger: 'item',
+                            formatter: '{a} <br/>{b} : {c} ({d}%)'
+                        },
+                        series: [
+                            {
+                                name: '省份数量',
+                                type: 'pie',
+                                radius: '60%',
+                                center: ['50%', '60%'],
+                                data: series_data,
+                                emphasis: {
+                                    itemStyle: {
+                                        shadowBlur: 10,
+                                        shadowOffsetX: 0,
+                                        shadowColor: 'rgba(0, 0, 0, 0.5)'
+                                    }
+                                }
+                            }
+                        ]
+                    };
+                    if (option && typeof option === "object") {
+                        myChart.setOption(option, true);
+                    }
+
+                    var dom = document.getElementById("main5");
+                    var myChart = echarts.init(dom);
+
+                    var box_data1 = echarts.dataTool.prepareBoxplotData(data['date_price_box1']);
+                    var box_data2 = echarts.dataTool.prepareBoxplotData(data['date_price_box2']);
+
+                    option = {
+                        title: [
+                            {
+                                text: product_name1 + '和'+product_name2+'价格分布箱型对比图',
+                                left: 'center',
+                            }
+                        ],
+                        tooltip: {
+                            trigger: 'item',
+                            axisPointer: {
+                                type: 'shadow'
+                            }
+                        },
+                        grid: {
+                        show:true,
+                        left: "3%",
+                        right: "1%",
+                    },
+                        legend: {
+                            show: true,
+                            top: "6%" //与上方的距离 可百分比% 可像素px
+                        },
+                        xAxis: {
+                            type: 'category',
+                            data: data['date'],
+                            axisLabel: {
+                                interval: 0,
+                                rotate: 45
+                            },
+                        },
+                        yAxis: {
+                            type: 'value',
+                            name: '价格',
+                            splitArea: {
+                                show: true
+                            },
+                            scale: true
+                        },
+                        series: [
+                        {
+                                name: product_name1,
+                                type: 'boxplot',
+                                data: box_data1.boxData
+                            },
+                            {
+                                name: product_name2,
+                                type: 'boxplot',
+                                data: box_data2.boxData
+                            }
+                        ]
+                    };
+
+                    if (option && typeof option === "object") {
+                        myChart.setOption(option, true);
+                    }
+                }
+            );
+        });
+
+    });
+</script>
+
+<div class="" style="margin-left: 100px;margin-right: 100px;">
+    <h3 class="page-header">不同农产品价格价格趋势对比分析</h3>
+    <div>
+        <p style="font-size: 18px;"><b>请选择农产品1：</b>
+        <div class="radio" id="product_ratio1" style="font-size: 18px;">
+
+        </div>
+        </p>
+        <p style="font-size: 18px;"><b>请选择农产品2：</b>
+        <div class="radio" id="product_ratio2" style="font-size: 18px;">
+
+        </div>
+        </p>
+    </div>
+    <button class="btn btn-info" id="submit">提交分析</button>
+
+</div>
+<div class="row placeholders" style="margin-top: 20px; margin-left: 20px;">
+    <div class="col-xs-4 placeholder" style="height:400px;" id="main1"></div>
+    <div class="col-xs-4 placeholder" style="height:400px;" id="main2"></div>
+    <div class="col-xs-4 placeholder" style="height:400px;" id="main3"></div>
+</div>
+
+<div class="row placeholders" style="margin-top: 5px;">
+    <div class="col-xs-4 placeholder" style="height:400px;" id="main4"></div>
+    <div class="col-xs-8 placeholder" style="height:400px;" id="main5"></div>
+</div>
+
+{% endblock %}

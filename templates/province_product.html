@@ -1,0 +1,466 @@
+{% extends "layout.html" %}
+
+{% block content %}
+<script src="../static/js/jquery.min.js" type="text/javascript" charset='utf-8'></script>
+<script src="../static/js/echarts.js" charset='utf-8'></script>
+<script src="../static/js/echarts-wordcloud.min.js" type="text/javascript" charset='utf-8'></script>
+<script type="text/javascript" src="https://cdn.jsdelivr.net/npm/echarts/dist/extension/dataTool.min.js"></script>
+
+<script type="text/javascript">
+    // 初始化界面
+    $(function () {
+        $('#li_0').attr('class', '');
+        $('#li_1_0').attr('class', 'active');
+        $('#li_1').attr('class', '');
+        $('#li_2').attr('class', '');
+        $('#li_3').attr('class', '');
+
+        // 判断是否登录
+        $.get('http://127.0.0.1:5000/check_login', {},
+            function (data) {
+                console.log(data);
+                if (data['login'] === false) {
+                    window.location.href = '/'
+                }
+                else {
+                    $('#show_login_reg').hide();
+                    $('#index_img').css('height', '95%');
+                }
+            }
+        );
+
+        $.get('http://127.0.0.1:5000/get_all_products_shengs', {},
+            function (data) {
+                pro_ratio = ''
+                for (var i = 0; i < data['products'].length; i++) {
+                    if (i == 0) {
+                        pro_ratio += '<label style="margin-left:5px;"><input type="radio" name="product_name" checked value="' + data['products'][i] + '">' + data['products'][i] + '</label>'
+                    } else {
+                        pro_ratio += '<label style="margin-left:5px;"><input type="radio" name="product_name" value="' + data['products'][i] + '">' + data['products'][i] + '</label>'
+                    }
+                }
+                $('#product_ratio').append(pro_ratio)
+
+                sheng_ratio = ''
+                for (var i = 0; i < data['shengs'].length; i++) {
+                    if (i == 0) {
+                        sheng_ratio += '<label style="margin-left:5px;"><input type="radio" name="sheng_name" checked value="' + data['shengs'][i] + '">' + data['shengs'][i] + '</label>'
+                    } else {
+                        sheng_ratio += '<label style="margin-left:5px;"><input type="radio" name="sheng_name" value="' + data['shengs'][i] + '">' + data['shengs'][i] + '</label>'
+                    }
+                }
+                $('#sheng_ratio').append(sheng_ratio)
+
+                var product_name = $("input[name='product_name']:checked").val()
+                var sheng_name = $("input[name='sheng_name']:checked").val()
+
+            $.get('http://127.0.0.1:5000/sheng_product_analysis/' + product_name + '/' + sheng_name, {},
+                function (data) {
+                    var dom = document.getElementById("main3");
+                    var myChart = echarts.init(dom);
+                    var series_data = [];
+                    for (var i = 0; i < data['shengs'].length; i++) {
+                        series_data.push({ value: data['sheng_counts'][i], name: data['shengs'][i] });
+                    }
+
+                    var option = {
+                        title: {
+                            left: 'center',
+                            text: '全国不同省份' + product_name + '价格发布数量分布饼状图',
+                        },
+                        tooltip: {
+                            trigger: 'item',
+                            formatter: '{a} <br/>{b} : {c} ({d}%)'
+                        },
+                        series: [
+                            {
+                                name: '数量',
+                                type: 'pie',
+                                radius: '80%',
+                                center: ['50%', '60%'],
+                                data: series_data,
+                                emphasis: {
+                                    itemStyle: {
+                                        shadowBlur: 10,
+                                        shadowOffsetX: 0,
+                                        shadowColor: 'rgba(0, 0, 0, 0.5)'
+                                    }
+                                }
+                            }
+                        ]
+                    };
+                    if (option && typeof option === "object") {
+                        myChart.setOption(option, true);
+                    }
+
+                    var dom = document.getElementById("main4");
+                    var myChart = echarts.init(dom);
+
+                    var option = {
+                        title: {
+                            text: '全国不同省份的' + product_name + '价格分布直方图',
+                            left: 'center',
+                        },
+                        tooltip: {
+                            trigger: 'axis',
+                            axisPointer: {
+                                type: 'shadow'
+                            }
+                        },
+                        legend: {
+                            show: true,
+                            top: "6%" //与上方的距离 可百分比% 可像素px
+                        },
+                        grid: {
+                            left: '3%',
+                            right: '4%',
+                            bottom: '3%',
+                            containLabel: true
+                        },
+                        xAxis: {
+                            type: 'category',
+                            data: data['shengs']
+                        },
+                        yAxis: {
+                            type: 'value',
+                            boundaryGap: [0, 0.01]
+                        },
+                        series: [
+                            {
+                                name: '最低价',
+                                type: 'bar',
+                                data: data['sheng_low_price']
+                            },
+                            {
+                                name: '平均价',
+                                type: 'bar',
+                                data: data['sheng_mean_price']
+                            },
+                            {
+                                name: '最高价',
+                                type: 'bar',
+                                data: data['sheng_high_price']
+                            }
+                        ]
+                    };
+                    if (option && typeof option === "object") {
+                        myChart.setOption(option, true);
+                    }
+
+                    var dom = document.getElementById("main5");
+                    var myChart = echarts.init(dom);
+                    var series_data = [];
+                    for (var i = 0; i < data['products'].length; i++) {
+                        series_data.push({ value: data['product_counts'][i], name: data['products'][i] });
+                    }
+
+                    var option = {
+                        title: {
+                            left: 'center',
+                            text: sheng_name + '不同农产品价格发布数量分布饼状图',
+                        },
+                        tooltip: {
+                            trigger: 'item',
+                            formatter: '{a} <br/>{b} : {c} ({d}%)'
+                        },
+                        series: [
+                            {
+                                name: '数量',
+                                type: 'pie',
+                                radius: '80%',
+                                center: ['50%', '60%'],
+                                data: series_data,
+                                emphasis: {
+                                    itemStyle: {
+                                        shadowBlur: 10,
+                                        shadowOffsetX: 0,
+                                        shadowColor: 'rgba(0, 0, 0, 0.5)'
+                                    }
+                                }
+                            }
+                        ]
+                    };
+                    if (option && typeof option === "object") {
+                        myChart.setOption(option, true);
+                    }
+
+                    var dom = document.getElementById("main6");
+                    var myChart = echarts.init(dom);
+
+                    var option = {
+                        title: {
+                            text: sheng_name + '不同农产品价格分布直方图',
+                            left: 'center',
+                        },
+                        tooltip: {
+                            trigger: 'axis',
+                            axisPointer: {
+                                type: 'shadow'
+                            }
+                        },
+                        legend: {
+                            show: true,
+                            top: "6%" //与上方的距离 可百分比% 可像素px
+                        },
+                        grid: {
+                            left: '3%',
+                            right: '4%',
+                            bottom: '3%',
+                            containLabel: true
+                        },
+                        xAxis: {
+                            type: 'category',
+                            data: data['products']
+                        },
+                        yAxis: {
+                            type: 'value',
+                            boundaryGap: [0, 0.01]
+                        },
+                        series: [
+                            {
+                                name: '最低价',
+                                type: 'bar',
+                                data: data['product_low_price']
+                            },
+                            {
+                                name: '平均价',
+                                type: 'bar',
+                                data: data['product_mean_price']
+                            },
+                            {
+                                name: '最高价',
+                                type: 'bar',
+                                data: data['product_high_price']
+                            }
+                        ]
+                    };
+                    if (option && typeof option === "object") {
+                        myChart.setOption(option, true);
+                    }
+                }
+            );
+            }
+        );
+
+        $('#submit').click(function (args) {
+            var product_name = $("input[name='product_name']:checked").val()
+            var sheng_name = $("input[name='sheng_name']:checked").val()
+
+            $.get('http://127.0.0.1:5000/sheng_product_analysis/' + product_name + '/' + sheng_name, {},
+                function (data) {
+                    var dom = document.getElementById("main3");
+                    var myChart = echarts.init(dom);
+                    var series_data = [];
+                    for (var i = 0; i < data['shengs'].length; i++) {
+                        series_data.push({ value: data['sheng_counts'][i], name: data['shengs'][i] });
+                    }
+
+                    var option = {
+                        title: {
+                            left: 'center',
+                            text: '全国不同省份' + product_name + '价格发布数量分布饼状图',
+                        },
+                        tooltip: {
+                            trigger: 'item',
+                            formatter: '{a} <br/>{b} : {c} ({d}%)'
+                        },
+                        series: [
+                            {
+                                name: '数量',
+                                type: 'pie',
+                                radius: '80%',
+                                center: ['50%', '60%'],
+                                data: series_data,
+                                emphasis: {
+                                    itemStyle: {
+                                        shadowBlur: 10,
+                                        shadowOffsetX: 0,
+                                        shadowColor: 'rgba(0, 0, 0, 0.5)'
+                                    }
+                                }
+                            }
+                        ]
+                    };
+                    if (option && typeof option === "object") {
+                        myChart.setOption(option, true);
+                    }
+
+                    var dom = document.getElementById("main4");
+                    var myChart = echarts.init(dom);
+
+                    var option = {
+                        title: {
+                            text: '全国不同省份的' + product_name + '价格分布直方图',
+                            left: 'center',
+                        },
+                        tooltip: {
+                            trigger: 'axis',
+                            axisPointer: {
+                                type: 'shadow'
+                            }
+                        },
+                        legend: {
+                            show: true,
+                            top: "6%" //与上方的距离 可百分比% 可像素px
+                        },
+                        grid: {
+                            left: '3%',
+                            right: '4%',
+                            bottom: '3%',
+                            containLabel: true
+                        },
+                        xAxis: {
+                            type: 'category',
+                            data: data['shengs']
+                        },
+                        yAxis: {
+                            type: 'value',
+                            boundaryGap: [0, 0.01]
+                        },
+                        series: [
+                            {
+                                name: '最低价',
+                                type: 'bar',
+                                data: data['sheng_low_price']
+                            },
+                            {
+                                name: '平均价',
+                                type: 'bar',
+                                data: data['sheng_mean_price']
+                            },
+                            {
+                                name: '最高价',
+                                type: 'bar',
+                                data: data['sheng_high_price']
+                            }
+                        ]
+                    };
+                    if (option && typeof option === "object") {
+                        myChart.setOption(option, true);
+                    }
+
+                    var dom = document.getElementById("main5");
+                    var myChart = echarts.init(dom);
+                    var series_data = [];
+                    for (var i = 0; i < data['products'].length; i++) {
+                        series_data.push({ value: data['product_counts'][i], name: data['products'][i] });
+                    }
+
+                    var option = {
+                        title: {
+                            left: 'center',
+                            text: sheng_name + '不同农产品价格发布数量分布饼状图',
+                        },
+                        tooltip: {
+                            trigger: 'item',
+                            formatter: '{a} <br/>{b} : {c} ({d}%)'
+                        },
+                        series: [
+                            {
+                                name: '数量',
+                                type: 'pie',
+                                radius: '80%',
+                                center: ['50%', '60%'],
+                                data: series_data,
+                                emphasis: {
+                                    itemStyle: {
+                                        shadowBlur: 10,
+                                        shadowOffsetX: 0,
+                                        shadowColor: 'rgba(0, 0, 0, 0.5)'
+                                    }
+                                }
+                            }
+                        ]
+                    };
+                    if (option && typeof option === "object") {
+                        myChart.setOption(option, true);
+                    }
+
+                    var dom = document.getElementById("main6");
+                    var myChart = echarts.init(dom);
+
+                    var option = {
+                        title: {
+                            text: sheng_name + '不同农产品价格分布直方图',
+                            left: 'center',
+                        },
+                        tooltip: {
+                            trigger: 'axis',
+                            axisPointer: {
+                                type: 'shadow'
+                            }
+                        },
+                        legend: {
+                            show: true,
+                            top: "6%" //与上方的距离 可百分比% 可像素px
+                        },
+                        grid: {
+                            left: '3%',
+                            right: '4%',
+                            bottom: '3%',
+                            containLabel: true
+                        },
+                        xAxis: {
+                            type: 'category',
+                            data: data['products']
+                        },
+                        yAxis: {
+                            type: 'value',
+                            boundaryGap: [0, 0.01]
+                        },
+                        series: [
+                            {
+                                name: '最低价',
+                                type: 'bar',
+                                data: data['product_low_price']
+                            },
+                            {
+                                name: '平均价',
+                                type: 'bar',
+                                data: data['product_mean_price']
+                            },
+                            {
+                                name: '最高价',
+                                type: 'bar',
+                                data: data['product_high_price']
+                            }
+                        ]
+                    };
+                    if (option && typeof option === "object") {
+                        myChart.setOption(option, true);
+                    }
+                }
+            );
+        });
+
+    });
+</script>
+
+<div class="" style="margin-left: 100px;margin-right: 100px;">
+    <h3 class="page-header">全国各省农产品总体情况</h3>
+    <div>
+        <p style="font-size: 18px;"><b>请选择农产品：</b>
+        <div class="radio" id="product_ratio" style="font-size: 18px;">
+
+        </div>
+        </p>
+        <p style="font-size: 18px;"><b>请选择省份：</b>
+        <div class="radio" id="sheng_ratio" style="font-size: 18px;">
+
+        </div>
+        </p>
+    </div>
+    <button class="btn btn-info" id="submit">提交分析</button>
+
+</div>
+<div class="row placeholders" style="margin-top: 20px; margin-left: 20px;">
+    <div class="col-xs-4 placeholder" style="height:400px;" id="main3"></div>
+    <div class="col-xs-8 placeholder" style="height:400px;" id="main4"></div>
+</div>
+
+<div class="row placeholders" style="margin-top: 20px; margin-left: 20px;">
+    <div class="col-xs-4 placeholder" style="height:400px;" id="main5"></div>
+    <div class="col-xs-8 placeholder" style="height:400px;" id="main6"></div>
+</div>
+
+{% endblock %}
